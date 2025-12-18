@@ -16,10 +16,10 @@ GOOGLE_SHEETS_CREDENTIALS = """
 {
   "type": "service_account",
   "project_id": "love-emergency",
-  "private_key_id": "YOUR_NEW_PRIVATE_KEY_ID_HERE",
-  "private_key": "-----BEGIN PRIVATE KEY-----\\nYOUR_NEW_PRIVATE_KEY_HERE\\n-----END PRIVATE KEY-----\\n",
+  "private_key_id": "4e5e0689c18ade5053932346e0eeb63f34ae3a27",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC//2gAVMiOXlyE\npFR6uphGJMuiN+DRB00qNO+9O1dPpau7+xgCHCn3VuImKKL7n67uLIfnhFJvs9OF\nD69pcmzBZG6ivIhFys0wFszcG5b7x7YXHvYPfWrUJodKW8yoBvAEtHXjYUXfpYhD\nW99p8Bbn9n23atmPIrIedj3a1hkQ6IpWftEJ/DASsx7ikiEZePmW005iTD9Xgfg4\nNPBOTNRqWc7oz25+rufcgfW6dPRGEJTaPouc3IVyLK3QZUmVEGP+0GSflaHdV/o4\n4uc7BY60VwLgisPL9r0qrGJUbqkPw/2jhItEC361nlx4eU+tqcla7CGhbm+tvpb1\nnQwN9y65AgMBAAECggEAAYhwdBLj5B2DBu32B4QHno2fML2m8QIuhALBZFczJzLH\nonJmdUXa0+yrd1CH4Whw63OkxRRi69j/60hCcfNsRJuPrT71UOrwnFU3mrfl8S4q\nbn7T7EF41PQjqmVS+f7fYocIM8yhoKhgBntBxiL2zw5kcNcQ9kskSqssN+0EwlmW\ndk8Hb9NBgCmQ/w2+BJHLEyp+dquMPX3JmBF5FU+yvzSWhCgzY8yJmOUNcOusM4kP\nqnjSLM4fK4H9kMx4DYXxfqG6C3dJcYCaZz6syCf3+Vew/b+DdBWmbB2NYMhP6FcX\n1z+CxT5YSBjRUvFxc5q0zUPD2tsAeltA+ObE6odSAQKBgQD8E8vuNosr1Q8nav6d\nAG77eKhwjFfZFd8oHr2aIswla1mhIlGEjJBmxO+UKKo0EKVH5uyN17P+M66FYOif\n9kzgQy9r5PHhd+JhUESQjRIoEefsOElRZsFtZMAefbPQaLCoSM6lazJZcN02ttcu\nqcSCrBFKKOkP5Cm22Ga+/IPgQQKBgQDC/EUH2cnuLwdNK86+XB+5vimMJrSU+bR7\nPS4bC6VyDVF2b/Agi2IFPBwM6ZpSfFwy7Fz+DQdFxSZBbKHqweSDSdrkYWd0/ojJ\n8GhxzO1eXGipvACKf833NLsI7y4ZNLmNSUjrgwubHvg5mxkD9s4Epo3XyXH3w5S/\nSsWrtBYweQKBgHxhBEHA9gCluzl26LTtLtW0HmCSTxJVYWv5ZxJz0wkvo+UG+vQN\nK38Z8yDGw9y2zebhgZ0nbq+iLp2vSHkNXbdWT0LMj7Dxp2je40Xz5Z6R3z7GMx8Q\nNabVjJo+6geOcIRIkHY8o3ZQY0aJBzoGGGlln45ZC06FBTQsKN5Z2HRBAoGAcn6V\nvmVpiJ4+6FbIAMmxq2z5kp2Lvkreatti/miZTt55LlXOqB2QgkhopEBr6PGzZgeb\nF2bpFVQOAa7baTFPkLRGf4KesHliM0oi2mgeHiGfJ8QIgUtI01c4WKex5wUpy8fz\ntK9vmjfWRGVJjCVZliuC8OoOLRHAf49VgVyvBukCgYA6F1FPttT1yvrW+d3NhQiI\nHOIHh+izQ9T6WMcXFD3s6RhK+/qpJtIWhMuSDxbBQ0uq/RnamwfgSQrQn6aomcU5\nzSsSvwC0PlaB54ySklAn2deWrjHEv9wWI6exOvgll3Drw04wrb4iY0oBqml/rQwV\nNwQPQEnD7ci/dwcgd5Vr7Q==\n-----END PRIVATE KEY-----\n",
   "client_email": "wlt-607@love-emergency.iam.gserviceaccount.com",
-  "client_id": "...",
+  "client_id": "112209856028945305453",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
   "token_uri": "https://oauth2.googleapis.com/token",
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
@@ -300,3 +300,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
