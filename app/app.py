@@ -91,41 +91,45 @@ def classify_love_type_en(I, P, C, threshold=7):
         return "Non-love", "无爱：日常的普通社交。"
 
 # ---------- 3. 可视化函数 ----------
-# 仅替换这段函数 ↓↓↓  曲线图代码保持原样
+# 仅替换这段函数 ↓↓↓  其余任何代码不动
 @st.cache_data
-def plot_love_triangle(I, P, C):
-    fig, ax = plt.subplots(figsize=(6.5, 6.5), subplot_kw=dict(polar=True))
-    labels = ['Intimacy (I)', 'Passion (P)', 'Commitment (C)']
-    values = np.array([I, P, C])
-    values = np.concatenate((values, [I]))
-    angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
-    angles = np.concatenate((angles, [angles[0]]))
+def plot_success_curve(A, t_peak, sigma, current_time):
+    t_start = max(0, min(t_peak, current_time) - 2 * sigma)
+    t_end   = max(10, max(t_peak, current_time) + 2 * sigma)
+    t       = np.linspace(t_start, t_end, 300)
+    p       = success_rate(t, A, t_peak, sigma)
+    p       = np.clip(p, 0, 1)
+    predicted_rate = success_rate(current_time, A, t_peak, sigma)
 
-    # 只改这里：三轴分别用蓝-红-绿，透明度渐变
-    axis_colors = ['#4B92DB', '#FF6B6B', '#4ECB71']
-    for i, (angle, val, color) in enumerate(zip(angles[:-1], values[:-1], axis_colors)):
-        ax.bar([angle], [val], width=2*np.pi/3, color=color, alpha=0.65, edgecolor=color, linewidth=2)
+    fig, ax = plt.subplots(figsize=(9, 6))
 
-    # 下面一行不改
-    ax.plot(angles, values, 'o-', linewidth=3, color='mediumvioletred',
-            markerfacecolor='mediumvioletred', markersize=8, label="Relationship Status")
-    ax.fill(angles, values, color='lightpink', alpha=0.6)
+    # 英文图例与坐标轴
+    ax.fill_between(t, 0, p, color='skyblue', alpha=0.2, label="Success Zone")
+    ax.plot(t, p, color='steelblue', linewidth=3, label="Success Rate p(t)")
 
-    ax.set_thetagrids(angles[:-1] * 180/np.pi, labels,
-                      fontsize=11, color='darkslategray')
-    ax.set_ylim(0, 10)
-    ax.set_yticks(np.arange(0, 11, 2))
-    ax.tick_params(axis='y', colors='gray', labelsize=10)
-    ax.spines['polar'].set_visible(False)
-    ax.grid(color='lightgray', linestyle='--')
+    ax.axvline(current_time, color='darkorange', linestyle='-', linewidth=2,
+               label=f"Predicted Action (T={current_time:.2f}w)")
+    ax.scatter(current_time, predicted_rate, s=150, color='darkorange',
+               zorder=5, marker='o', edgecolor='white', linewidth=2)
 
-    love_type_en, desc_en = classify_love_type_en(I, P, C)
-    ax.text(0, 0, f"Type: {love_type_en}\n\n{desc_en}",
-            ha='center', va='center', fontsize=10, color='mediumvioletred', wrap=True,
-            bbox=dict(facecolor='white', alpha=0.9, edgecolor='none', boxstyle="round,pad=0.7"))
+    ax.axvline(t_peak, color='crimson', linestyle='--', linewidth=1.5,
+               label=f"Ideal Peak (Tpeak={t_peak:.2f}w)")
+    ax.axhline(A, color='forestgreen', linestyle=':',
+               label=f"Max Rate (A={A:.2f})", linewidth=1.5)
 
-    ax.set_title("💞 Sternberg's Triangular Theory of Love",
-                 va='bottom', fontsize=15, pad=20, color='darkslategray')
+    ax.annotate(f"Rate: {predicted_rate:.2f}",
+                xy=(current_time, predicted_rate),
+                xytext=(current_time + 0.5 * sigma, predicted_rate - 0.1),
+                arrowprops=dict(facecolor='darkorange', shrink=0.05,
+                                width=1, headwidth=8, headlength=8, alpha=0.7),
+                fontsize=11, color='darkorange')
+
+    ax.set_xlabel("Time t (Weeks)", fontsize=12)
+    ax.set_ylabel("Probability p(t)", fontsize=12)
+    ax.set_title("📈 Confession Timing & Success Rate Analysis",
+                 fontsize=15, pad=15)
+    ax.legend(fontsize=9, loc='upper right')
+
     return fig
 
 @st.cache_data
@@ -255,5 +259,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
