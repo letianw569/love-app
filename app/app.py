@@ -1,4 +1,4 @@
-# app.py  彩色渐变三角图 + 关键事件选择器 完整版
+# app.py  修正顺序后的完整主程序
 import streamlit as st
 import numpy as np
 import matplotlib
@@ -48,7 +48,7 @@ def success_rate(t, A, t0, sigma):
 
 def stability_analysis(t, A_val, t0, sigma, delta=0.01):
     right_limit = success_rate(t + delta, A_val, t0, sigma)
-    left_limit = success_rate(t - delta, A_val, t0, sigma)
+    left_limit  = success_rate(t - delta, A_val, t0, sigma)
     if np.isnan(left_limit) or np.isnan(right_limit):
         return "骚操作把自己骚死了 💀"
     is_limit_equal = abs(left_limit - right_limit) < 1e-2
@@ -90,8 +90,7 @@ def classify_love_type_en(I, P, C, threshold=7):
     else:
         return "Non-love", "无爱：日常的普通社交。"
 
-# ---------- 3. 可视化函数 ----------
-# ========== ① 爱之三角图（极坐标）==========
+# ---------- 3. 可视化函数（彩色三角图+详细曲线） ----------
 @st.cache_data
 def plot_love_triangle(I, P, C):
     fig, ax = plt.subplots(figsize=(7, 7), subplot_kw=dict(polar=True))
@@ -101,11 +100,10 @@ def plot_love_triangle(I, P, C):
     angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
     angles = np.concatenate((angles, [angles[0]]))
 
-    # 每轴彩色渐变 + 阴影
+    # 每轴彩色渐变 + 数值标签
     axis_colors = ['#4B92DB', '#FF6B6B', '#4ECB71']
     for ang, val, color in zip(angles[:-1], values[:-1], axis_colors):
         ax.bar(ang, val, width=2*np.pi/3, color=color, alpha=0.65, edgecolor=color, lw=2)
-        # 数值标签
         ax.text(ang, val+0.3, f'{val}', color=color, fontsize=12, ha='center', weight='bold')
 
     ax.plot(angles, values, 'o-', color='darkslategray', lw=3, markersize=9)
@@ -123,7 +121,6 @@ def plot_love_triangle(I, P, C):
     return fig
 
 
-# ========== ② 成功率曲线（直角坐标）==========
 @st.cache_data
 def plot_success_curve(A, t_peak, sigma, current_time):
     t_start = max(0, min(t_peak, current_time) - 2 * sigma)
@@ -167,18 +164,6 @@ def plot_success_curve(A, t_peak, sigma, current_time):
 
     return fig
 
-@st.cache_data
-def plot_success_curve(A, t_peak, sigma, current_time):
-    t = np.linspace(0, 15, 300)
-    p = success_rate(t, A, t_peak, sigma)
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(t, p, label="成功率曲线", color='steelblue', linewidth=3)
-    ax.axvline(current_time, color='darkorange', label=f"预测时机: {current_time:.2f}w")
-    ax.fill_between(t, 0, p, alpha=0.2, color='skyblue')
-    ax.set_xlabel("时间 (周)")
-    ax.set_ylabel("成功概率")
-    ax.legend()
-    return fig
 
 # ---------- 4. 主分析函数 ----------
 def run_analysis(data):
@@ -230,6 +215,7 @@ def run_analysis(data):
     st.pyplot(plot_love_triangle(I, P, C))
     st.pyplot(plot_success_curve(A, t_peak, sigma, current_time_mapped))
 
+
 # ---------- 5. Streamlit UI ----------
 def main():
     st.title("💌 恋爱告急·表白分析系统")
@@ -262,7 +248,7 @@ def main():
         ipc_scores['c2'] = st.slider("Q10. 即使我们意见不合，我也会坚持这段关系，而不是轻易放弃。", 1, 5, 3, key='c2')
         ipc_scores['c3'] = st.slider("Q11. 我认为对方是值得我投入时间和精力的『唯一』选择。", 1, 5, 3, key='c3')
 
-        # ---------- 关键事件选择器 ----------
+        # --- 关键事件选择器 ---
         st.subheader("3. 🧭 关键时刻 T₀ 引导")
         t0_type = st.selectbox(
             "请选择你理想的『关键事件』类型：",
