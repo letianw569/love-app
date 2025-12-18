@@ -1,23 +1,25 @@
-# app.py  (完整可运行版，已集成 Google-Sheets 自动收集)
 import streamlit as st
 import numpy as np
 import matplotlib
+# 修复3: 强制使用非交互式后端，防止报错
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import gspread
 from google.oauth2.service_account import Credentials
 import json
-import toml   # pip install toml
+import pandas as pd  # 修复2: 移到这里，否则下面提交时会报错
+# import toml  <-- 修复1: 删除未使用的库，避免报错
 
 # ---------- 0. Google Sheets 配置 ----------
-# ① 把 TOML 文件里 [[gc]] 的内容原样粘到下面三引号之间
+# ⚠️ 警告：生产环境中请使用 st.secrets，不要直接粘贴私钥！
 GOOGLE_SHEETS_CREDENTIALS = """
 {
- "type": "service_account",
+  "type": "service_account",
   "project_id": "love-emergency",
-  "private_key_id": "e58ff450cdd028ba5745ea62d93fda233ff203aa",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC8+E88zDIHbO8s\niWBwAMrCtJjxonHUNfHuP3INYxZPuRz2SS97629ey7K4mCPBB6Cdo/Z5BINYZq56\nwN+F/uL5WFcEJasxNBktwopqHREO6DoQXR+OocWUGoqp1atdrDP33Nf2AKZXpB2N\nTavW7I2/OPKvKoYIkI2QZoRJHTYlz9i+OeHDukl8e/1HgDtw5B9FwA4t4oiySuYA\n9Z51+8fpgY2ybuGbefZtI8eN++FUch6U8sPdykA0Dpr95Kb20QCplTFc19lM1L0h\nfqB+H+7QJHlsKQx1une6sJt0XyvV7VLPe4I9gfvw8d2lFtBTUlW2J2Q+325Z9AUa\npL6hmDtFAgMBAAECggEAHiD0+TuRSm/K3m30y0bFDTAgJn6A6ZXEQfkppQrEVuer\nv3TBtl8+PX36u8W+BZvCtv+aX4chremJLhcsTD/sTlcQYJ/k4I5u6UXYLbz+qELM\nZymBy4rtZoSo0RU5IlE/Y+h5IkbOPrDy6UGWAUlr/C4HO3hrMFhjyb8enk2jAXoQ\n8GUj/oypq1Rttd4MOD7zKm7TM4e3lkl0vkUrq165l6ssIzePAbqdN+Fd162SHLEC\nUc/TTR6WnBgsXqacpXnyTkFedEbbW3tNLmd2TiadutCCZTuk/vQgzHBBnkRnW7Nk\nOLM0Mw13TRFli9eFxFIMKHOsLjBXfojVFEAuuirngQKBgQDdZhkdJepYQuX07Y41\n/sqzOUb7NRDcpwtIsq2o0AVKrIEnZ1jd8vYIx/2xCIMCDszxQ2p2LtzDV1y4548y\nX1Ev0ylT0y2al3Ua3g+F8fFG2p7nBy21izR647Uty3C4yQeapz0hnrFXzuKnxNII\nDPHOM129KfC8qsl1ks7hIeRy4QKBgQDagMV/BQn6MS4gmVtxQ0aXAyOBNolSIQck\nL0pvf3Bzbbzbo3b6yECHvNm0M7SoPR3D+RvKVyWl9M7hNaUrxpkhKwDOxeDW/e0h\nG1xeTKfigN8jdwmLO7zZX9yt9Z2iHLr+TF7kLcfJujYme/bVQ4Pe/OyS+H/pvkAO\nfMFJKuR45QKBgQC/SeeI96lyeNqWtGma3XnlQCfEBCV9gBaPyVGh+ZmY21L76J8v\npSxOifz3aJNIw+Du04C4e+TiIilK2UcwDorm91tNwbg1SYc0n4hqApCk119T3S/x\nG0VMqFFyL8RE4+xeAwEeey5e37GVosiVjBmgP2FOf14wpJ9Lpnx4p//qAQKBgDp4\n72EYdh0QACoVIBVlTYSoAF5Zu9HQqNqUFTVVQ0CAg2O7kOF3qV0pupCwrY3AHTEO\\nftNdEuQgaSR3eKYIVX48xdCPv6WI+mY7rjJGDT9eAVi6SEGMUPNS5flfmzmAusHG\\nqjYh0i83t7oAvoM/uBB6WszR11kz4mx+EjOEWPPJAoGBAI1H4H/o86K0Msv3EuB0\\n+fA7/XhBNMrC0FS4bEMkjN/hv/CbFyQdWHUaeuA8nqIM1BJPJIhXJFqV5JLK1/IJ\\nG0Y8DW7i02lRNqy2GVAGll4S5yApGvi/mzA0FEvPXiKNzNwHeqYchbBofhsIN2jr\\njWAn8GNYVXVVgQoZIiZp7hXN\\n-----END PRIVATE KEY-----\\n",
+  "private_key_id": "YOUR_NEW_PRIVATE_KEY_ID_HERE",
+  "private_key": "-----BEGIN PRIVATE KEY-----\\nYOUR_NEW_PRIVATE_KEY_HERE\\n-----END PRIVATE KEY-----\\n",
   "client_email": "wlt-607@love-emergency.iam.gserviceaccount.com",
-  "client_id": "112209856028945305453",
+  "client_id": "...",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
   "token_uri": "https://oauth2.googleapis.com/token",
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
@@ -25,20 +27,27 @@ GOOGLE_SHEETS_CREDENTIALS = """
   "universe_domain": "googleapis.com"
 }
 """
-# ② 打开目标表格，把 URL 里 /d/ 与 /edit 之间的那段 ID 粘过来
-SHEET_ID = "spreadsheets/d/1bLDL8ALzc11oU1Ox0Xv0SN9fi3aIRrmcfn4ogUtVPxY"
+# 👆 请把上面这串内容替换为你重新下载的 JSON 内容 (或者保留你原来的，如果你还没废除)
 
-# 建立 gspread 连接（全局只连一次）
-scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-gc = gspread.service_account_from_dict(json.loads(GOOGLE_SHEETS_CREDENTIALS), scopes)
-sheet = gc.open_by_key(SHEET_ID).sheet1   # 默认用第 1 个工作表
+SHEET_ID = "1qRsD5Z2LxM0QYrVKL8g_6ZxyAj5VQYDXxR2oVwKoB7I"
+
+# 建立 gspread 连接
+try:
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    # 增加容错处理，防止JSON格式粘贴错误
+    creds_dict = json.loads(GOOGLE_SHEETS_CREDENTIALS, strict=False)
+    gc = gspread.service_account_from_dict(creds_dict, scopes)
+    sheet = gc.open_by_key(SHEET_ID).sheet1
+except Exception as e:
+    st.error(f"Google Sheets 连接失败: {e}")
+    st.stop()
 
 # ---------- 1. Matplotlib 配置 ----------
 matplotlib.rcParams['font.sans-serif'] = ['Arial', 'DejaVu Sans', 'sans-serif']
 matplotlib.rcParams['axes.unicode_minus'] = False
 plt.style.use('seaborn-v0_8-whitegrid')
 
-# ---------- 2. 核心数学模型函数（与之前一致，省略重复注释） ----------
+# ---------- 2. 核心数学模型函数 ----------
 def generate_confession_times(mode, n=50):
     i_series = np.array(range(1, n + 1))
     if mode == "mo_ceng":
@@ -108,7 +117,7 @@ def classify_love_type_en(I, P, C, threshold=7):
     else:
         return "Non-love", "Lacks all elements. Casual daily interaction."
 
-# ---------- 4. 可视化函数（与之前一致，省略） ----------
+# ---------- 4. 可视化函数 ----------
 @st.cache_data
 def plot_love_triangle(I, P, C):
     fig, ax = plt.subplots(figsize=(6.5, 6.5), subplot_kw=dict(polar=True))
@@ -203,22 +212,25 @@ def run_analysis(data):
     predicted_rate = success_rate(current_time_mapped, A, t_peak, sigma)
 
     # ---- 6. 追加到 Google Sheets ----
-    # 把要保存的字段 flatten 成一行
-    row = [
-        str(st.session_state.get('submit_time', '')),  # 提交时间
-        q1_delay,
-        q2_change,
-        *raw_i,   # i1 i2 i3
-        *raw_p,   # p1 p2 p3
-        *raw_c,   # c1 c2 c3
-        t0_ideal,
-        I, P, C,
-        round(t_peak, 2),
-        round(current_time_mapped, 2),
-        round(predicted_rate, 2),
-        status
-    ]
-    sheet.append_row(row)
+    try:
+        row = [
+            str(st.session_state.get('submit_time', '')),
+            q1_delay,
+            q2_change,
+            *raw_i,   # i1 i2 i3
+            *raw_p,   # p1 p2 p3
+            *raw_c,   # c1 c2 c3
+            t0_ideal,
+            I, P, C,
+            round(t_peak, 2),
+            round(current_time_mapped, 2),
+            round(predicted_rate, 2),
+            status
+        ]
+        sheet.append_row(row)
+        st.success("数据已成功保存到云端！")
+    except Exception as e:
+        st.warning(f"数据保存失败（不影响分析结果显示）: {e}")
 
     # ---------- 7. 前端展示 ----------
     st.markdown("## ✅ **恋爱分析报告**")
@@ -274,7 +286,7 @@ def main():
         submitted = st.form_submit_button("🚀 获取我的恋爱分析报告")
 
     if submitted:
-        st.session_state['submit_time'] = str(pd.Timestamp('now'))  # 记录提交时间
+        st.session_state['submit_time'] = str(pd.Timestamp('now'))  # 现在 pd 已经定义了
         analysis_data = {
             'q1_delay': q1_delay,
             'q2_change': q2_change,
@@ -287,9 +299,4 @@ def main():
         run_analysis(st.session_state['analysis_data'])
 
 if __name__ == '__main__':
-    import pandas as pd  # 仅为了生成提交时间戳
     main()
-
-
-
-
