@@ -1,8 +1,8 @@
-# app.py  只增不减完整版
+# app.py  彩色渐变三角图 + 关键事件选择器 完整版
 import streamlit as st
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')   # 云端无头
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import gspread
 from google.oauth2.service_account import Credentials
@@ -48,7 +48,7 @@ def success_rate(t, A, t0, sigma):
 
 def stability_analysis(t, A_val, t0, sigma, delta=0.01):
     right_limit = success_rate(t + delta, A_val, t0, sigma)
-    left_limit  = success_rate(t - delta, A_val, t0, sigma)
+    left_limit = success_rate(t - delta, A_val, t0, sigma)
     if np.isnan(left_limit) or np.isnan(right_limit):
         return "骚操作把自己骚死了 💀"
     is_limit_equal = abs(left_limit - right_limit) < 1e-2
@@ -64,7 +64,6 @@ def determine_mode(delay_choice, change_choice):
     else:
         return "random"
 
-# ---------- 3. 评分与英文分类 ----------
 def calculate_score(raw_scores):
     total_score = sum(raw_scores)
     final_score = 1 + ((total_score - 3) / (15 - 3)) * (10 - 1)
@@ -75,23 +74,23 @@ def classify_love_type_en(I, P, C, threshold=7):
     is_p = P >= threshold
     is_c = C >= threshold
     if is_i and is_p and is_c:
-        return "Consummate Love", "Ideal state: Intimacy, Passion, and Commitment coexist."
+        return "Consummate Love", "完美爱情：亲密、激情与承诺并存。"
     elif is_i and is_c:
-        return "Companionate Love", "Deep affection and commitment, but passion may have faded."
+        return "Companionate Love", "伴侣之爱：深厚的友谊与承诺，但缺乏激情。"
     elif is_p and is_c:
-        return "Fatuous Love", "Commitment based on passion without deep intimacy."
+        return "Fatuous Love", "愚蠢之爱：仅靠激情支撑的承诺。"
     elif is_i and is_p:
-        return "Romantic Love", "Emotional and physical bond, but lacks long-term commitment."
+        return "Romantic Love", "浪漫之爱：情感与身体的联结，缺乏长期规划。"
     elif is_i:
-        return "Liking", "Pure intimacy and friendship without intense passion."
+        return "Liking", "喜爱：纯粹的友谊。"
     elif is_p:
-        return "Infatuation", "Pure passion, often 'love at first sight'."
+        return "Infatuation", "迷恋：迷恋对方的外在或某种特质。"
     elif is_c:
-        return "Empty Love", "Commitment remains, but emotional spark is gone."
+        return "Empty Love", "空洞之爱：徒留名义上的承诺。"
     else:
-        return "Non-love", "Lacks all elements. Casual daily interaction."
+        return "Non-love", "无爱：日常的普通社交。"
 
-# ---------- 4. 可视化函数 ----------
+# ---------- 3. 可视化函数 ----------
 @st.cache_data
 def plot_love_triangle(I, P, C):
     fig, ax = plt.subplots(figsize=(6.5, 6.5), subplot_kw=dict(polar=True))
@@ -100,68 +99,41 @@ def plot_love_triangle(I, P, C):
     values = np.concatenate((values, [I]))
     angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
     angles = np.concatenate((angles, [angles[0]]))
-    plot_color = 'mediumvioletred'
-    fill_color = 'lightpink'
-    ax.plot(angles, values, 'o-', linewidth=3, color=plot_color,
-            markerfacecolor=plot_color, markersize=8, label="Relationship Status")
-    ax.fill(angles, values, color=fill_color, alpha=0.6)
-    ax.set_thetagrids(angles[:-1] * 180/np.pi, labels,
-                      fontsize=11, color='darkslategray')
+
+    # 三轴分别用蓝-红-绿，透明度渐变
+    colors = ['#4B92DB', '#FF6B6B', '#4ECB71']
+    for i, (angle, val, color) in enumerate(zip(angles[:-1], values[:-1], colors)):
+        ax.bar([angle], [val], width=2*np.pi/3, color=color, alpha=0.65, edgecolor=color, linewidth=2)
+
+    ax.plot(angles, values, 'o-', linewidth=2, color='darkslategray')
+    ax.fill(angles, values, alpha=0.15, color='gray')
+
+    ax.set_thetagrids(angles[:-1] * 180/np.pi, labels, fontsize=11, color='darkslategray')
     ax.set_ylim(0, 10)
     ax.set_yticks(np.arange(0, 11, 2))
     ax.tick_params(axis='y', colors='gray', labelsize=10)
     ax.spines['polar'].set_visible(False)
     ax.grid(color='lightgray', linestyle='--')
-    love_type_en, desc_en = classify_love_type_en(I, P, C)
-    ax.text(0, 0, f"Type: {love_type_en}\n\n{desc_en}",
-            ha='center', va='center', fontsize=10, color=plot_color, wrap=True,
-            bbox=dict(facecolor='white', alpha=0.9, edgecolor='none', boxstyle="round,pad=0.7"))
-    ax.set_title("💞 Sternberg's Triangular Theory of Love",
-                 va='bottom', fontsize=15, pad=20, color='darkslategray')
+
+    love_type, desc = classify_love_type_en(I, P, C)
+    ax.set_title(f"💞 {love_type}\n{desc}", pad=20, color='darkslategray')
     return fig
 
 @st.cache_data
 def plot_success_curve(A, t_peak, sigma, current_time):
-    t_start = max(0, min(t_peak, current_time) - 2 * sigma)
-    t_end   = max(10, max(t_peak, current_time) + 2 * sigma)
-    t       = np.linspace(t_start, t_end, 300)
-    p       = success_rate(t, A, t_peak, sigma)
-    p       = np.clip(p, 0, 1)
-    predicted_rate = success_rate(current_time, A, t_peak, sigma)
-
-    fig, ax = plt.subplots(figsize=(9, 6))
-
-    ax.fill_between(t, 0, p, color='skyblue', alpha=0.2, label="Success Zone")
-    ax.plot(t, p, color='steelblue', linewidth=3, label="Success Rate p(t)")
-
-    ax.axvline(current_time, color='darkorange', linestyle='-', linewidth=2,
-               label=f"Predicted Action (T={current_time:.2f}w)")
-    ax.scatter(current_time, predicted_rate, s=150, color='darkorange',
-               zorder=5, marker='o', edgecolor='white', linewidth=2)
-
-    ax.axvline(t_peak, color='crimson', linestyle='--', linewidth=1.5,
-               label=f"Ideal Peak (Tpeak={t_peak:.2f}w)")
-    ax.axhline(A, color='forestgreen', linestyle=':',
-               label=f"Max Rate (A={A:.2f})", linewidth=1.5)
-
-    ax.annotate(f"Rate: {predicted_rate:.2f}",
-                xy=(current_time, predicted_rate),
-                xytext=(current_time + 0.5 * sigma, predicted_rate - 0.1),
-                arrowprops=dict(facecolor='darkorange', shrink=0.05,
-                                width=1, headwidth=8, headlength=8, alpha=0.7),
-                fontsize=11, color='darkorange')
-
-    ax.set_xlabel("Time t (Weeks)", fontsize=12)
-    ax.set_ylabel("Probability p(t)", fontsize=12)
-    ax.set_title("📈 Confession Timing & Success Rate Analysis",
-                 fontsize=15, pad=15)
-    ax.legend(fontsize=9, loc='upper right')
-
+    t = np.linspace(0, 15, 300)
+    p = success_rate(t, A, t_peak, sigma)
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(t, p, label="成功率曲线", color='steelblue', linewidth=3)
+    ax.axvline(current_time, color='darkorange', label=f"预测时机: {current_time:.2f}w")
+    ax.fill_between(t, 0, p, alpha=0.2, color='skyblue')
+    ax.set_xlabel("时间 (周)")
+    ax.set_ylabel("成功概率")
+    ax.legend()
     return fig
 
-# ---------- 5. 主分析函数 ----------
+# ---------- 4. 主分析函数 ----------
 def run_analysis(data):
-    # 基础数据
     q1_delay = data['q1_delay']
     q2_change = data['q2_change']
     raw_i = [data[f'i{i}'] for i in range(1, 4)]
@@ -169,7 +141,6 @@ def run_analysis(data):
     raw_c = [data[f'c{i}'] for i in range(1, 4)]
     t0_ideal = data['t0_weeks']
 
-    # 模型计算
     mode = determine_mode(q1_delay, q2_change)
     I = calculate_score(raw_i)
     P = calculate_score(raw_p)
@@ -177,23 +148,11 @@ def run_analysis(data):
 
     A = 0.5 + ((I + P + C) / 30.0) * 0.5
     sigma = 0.5 + (C / 10.0) * 1.5
-
-    I_norm = I / 10.0
-    C_norm = C / 10.0
-    alpha = 1.0 - ((I_norm + C_norm) / 2.0) * 0.5
-    t_peak = t0_ideal * alpha
-    t_peak = np.clip(t_peak, 0.01, None)
+    t_peak = np.clip(t0_ideal * (1.0 - ((I/10.0 + C/10.0)/2.0)*0.5), 0.1, None)
 
     times = generate_confession_times(mode)
-    brave = is_brave(times)
     mean_times_last = np.mean(times[-10:])
-
-    if mode == "random":
-        current_time_mapped = t_peak + (mean_times_last - np.mean(times)) * (sigma / 4)
-    else:
-        current_time_mapped = t_peak + (mean_times_last - 1) * (sigma / 2)
-
-    current_time_mapped = np.clip(current_time_mapped, 0.01, t_peak + sigma * 3)
+    current_time_mapped = np.clip(t_peak + (mean_times_last - 1) * (sigma / 2), 0.1, 15)
 
     status = stability_analysis(current_time_mapped, A, t_peak, sigma)
     predicted_rate = success_rate(current_time_mapped, A, t_peak, sigma)
@@ -216,29 +175,14 @@ def run_analysis(data):
     st.markdown("## ✅ **恋爱分析报告**")
     st.markdown(f"### 当前恋爱状态判定：**{status}**")
     st.markdown("---")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("📊 关系基础分析 (IPC)")
-        st.metric(label="亲密 (I) 评分", value=f"{I}/10")
-        st.metric(label="激情 (P) 评分", value=f"{P}/10")
-        st.metric(label="承诺 (C) 评分", value=f"{C}/10")
-
-    with col2:
-        st.subheader("🧭 时机分析 (T)")
-        st.metric(label="🌟 实际最佳时刻 Tpeak", value=f"{t_peak:.2f} 周后")
-        st.metric(label="预测的行动时刻 T", value=f"{current_time_mapped:.2f} 周后",
-                  delta=f"{current_time_mapped - t_peak:.2f} 偏差")
-        st.metric(label="预测成功率 p(T)", value=f"{predicted_rate:.2f}")
-
-    st.markdown("---")
-    st.subheader("💞 爱之三角图 (Triangular Analysis)")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("亲密 I", I)
+    c2.metric("激情 P", P)
+    c3.metric("承诺 C", C)
     st.pyplot(plot_love_triangle(I, P, C))
-
-    st.subheader("📈 表白成功率曲线 (Success Probability Curve)")
     st.pyplot(plot_success_curve(A, t_peak, sigma, current_time_mapped))
 
-# ---------- 6. Streamlit UI ----------
+# ---------- 5. Streamlit UI ----------
 def main():
     st.title("💌 恋爱告急·表白分析系统")
     st.markdown("请完成以下问卷，系统将通过**斯滕伯格爱情理论**计算您的最佳表白时机。")
@@ -253,7 +197,6 @@ def main():
         q2_change = st.radio("Q2. 你的表白计划是：", options=[1, 2],
                             format_func=lambda x: "稳扎稳打 (1)" if x == 1 else "灵活变通 (2)")
 
-        # --- 2. 关系评估问卷（9 题完整） ---
         st.subheader("2. 💖 关系评估问卷 (1-5分)")
         ipc_scores = {}
         st.markdown("##### [亲密 Intimacy]")
@@ -271,9 +214,20 @@ def main():
         ipc_scores['c2'] = st.slider("Q10. 即使我们意见不合，我也会坚持这段关系，而不是轻易放弃。", 1, 5, 3, key='c2')
         ipc_scores['c3'] = st.slider("Q11. 我认为对方是值得我投入时间和精力的『唯一』选择。", 1, 5, 3, key='c3')
 
+        # ---------- 关键事件选择器 ----------
         st.subheader("3. 🧭 关键时刻 T₀ 引导")
-        t0_weeks = st.number_input("距离下一个重要节点（如节日、纪念日）还有几周？",
-                                   min_value=0.1, value=4.0)
+        t0_type = st.selectbox(
+            "请选择你理想的『关键事件』类型：",
+            options=["纪念日/里程碑", "个人事件/节日", "情感高峰期"],
+            key='t0_type'
+        )
+        t0_weeks = st.number_input(
+            f"请输入距离该『{t0_type}』事件还有多少**周**？ (例如: 3.5)",
+            min_value=0.1,
+            value=4.0,
+            step=0.1,
+            key='t0_weeks'
+        )
 
         submitted = st.form_submit_button("🚀 获取我的恋爱分析报告")
 
