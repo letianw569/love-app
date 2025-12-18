@@ -91,11 +91,10 @@ def classify_love_type_en(I, P, C, threshold=7):
         return "Non-love", "无爱：日常的普通社交。"
 
 # ---------- 3. 可视化函数 ----------
-# 仅替换这段函数 ↓↓↓
+# 仅替换这段函数 ↓↓↓  曲线图代码保持原样
 @st.cache_data
 def plot_love_triangle(I, P, C):
     fig, ax = plt.subplots(figsize=(6.5, 6.5), subplot_kw=dict(polar=True))
-
     labels = ['Intimacy (I)', 'Passion (P)', 'Commitment (C)']
     values = np.array([I, P, C])
     values = np.concatenate((values, [I]))
@@ -107,19 +106,24 @@ def plot_love_triangle(I, P, C):
     for i, (angle, val, color) in enumerate(zip(angles[:-1], values[:-1], axis_colors)):
         ax.bar([angle], [val], width=2*np.pi/3, color=color, alpha=0.65, edgecolor=color, linewidth=2)
 
-    # 其余完全保持原样
-    ax.plot(angles, values, 'o-', linewidth=3, color='darkslategray')
-    ax.fill(angles, values, alpha=0.15, color='gray')
-    ax.set_thetagrids(angles[:-1] * 180/np.pi, labels, fontsize=11, color='darkslategray')
+    # 下面一行不改
+    ax.plot(angles, values, 'o-', linewidth=3, color='mediumvioletred',
+            markerfacecolor='mediumvioletred', markersize=8, label="Relationship Status")
+    ax.fill(angles, values, color='lightpink', alpha=0.6)
+
+    ax.set_thetagrids(angles[:-1] * 180/np.pi, labels,
+                      fontsize=11, color='darkslategray')
     ax.set_ylim(0, 10)
     ax.set_yticks(np.arange(0, 11, 2))
     ax.tick_params(axis='y', colors='gray', labelsize=10)
     ax.spines['polar'].set_visible(False)
     ax.grid(color='lightgray', linestyle='--')
+
     love_type_en, desc_en = classify_love_type_en(I, P, C)
     ax.text(0, 0, f"Type: {love_type_en}\n\n{desc_en}",
             ha='center', va='center', fontsize=10, color='mediumvioletred', wrap=True,
             bbox=dict(facecolor='white', alpha=0.9, edgecolor='none', boxstyle="round,pad=0.7"))
+
     ax.set_title("💞 Sternberg's Triangular Theory of Love",
                  va='bottom', fontsize=15, pad=20, color='darkslategray')
     return fig
@@ -251,4 +255,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
