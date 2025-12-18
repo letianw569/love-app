@@ -26,7 +26,7 @@ GOOGLE_SHEETS_CREDENTIALS = """
 }
 """
 # ② 打开目标表格，把 URL 里 /d/ 与 /edit 之间的那段 ID 粘过来
-SHEET_ID = "1qRsD5Z2LxM0QYrVKL8g_6ZxyAj5VQYDXxR2oVwKoB7I"
+SHEET_ID = "spreadsheets/d/1bLDL8ALzc11oU1Ox0Xv0SN9fi3aIRrmcfn4ogUtVPxY"
 
 # 建立 gspread 连接（全局只连一次）
 scopes = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -289,4 +289,5 @@ def main():
 if __name__ == '__main__':
     import pandas as pd  # 仅为了生成提交时间戳
     main()
+
 
