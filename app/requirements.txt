@@ -1,6 +1,6 @@
 streamlit
 numpy
 matplotlib
-gspread>=5.10
-google-auth>=2.23
-pandas>=1.5
+gspread
+google-auth
+pandas
