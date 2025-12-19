@@ -1,4 +1,4 @@
-# app.py  只增不减完整版
+# app.py 整合完整版（含数据同意界面）
 import streamlit as st
 import numpy as np
 import matplotlib
@@ -117,7 +117,7 @@ def plot_love_triangle(I, P, C):
             ha='center', va='center', fontsize=10, color=plot_color, wrap=True,
             bbox=dict(facecolor='white', alpha=0.9, edgecolor='none', boxstyle="round,pad=0.7"))
     ax.set_title("💞 Sternberg's Triangular Theory of Love",
-                 va='bottom', fontsize=15, pad=20, color='darkslategray')
+                  va='bottom', fontsize=15, pad=20, color='darkslategray')
     return fig
 
 @st.cache_data
@@ -240,7 +240,37 @@ def run_analysis(data):
 
 # ---------- 6. Streamlit UI ----------
 def main():
+    st.set_page_config(page_title="恋爱分析系统", page_icon="💌")
     st.title("💌 恋爱告急·表白分析系统")
+
+    # --- 新增：匿名数据收集同意界面 ---
+    if 'data_consent' not in st.session_state:
+        st.session_state['data_consent'] = False
+
+    if not st.session_state['data_consent']:
+        st.info("### 📝 数据授权告知")
+        st.markdown("""
+        欢迎使用本分析系统。在开始前，请阅读以下说明：
+        
+        1. **匿名收集**：为了优化表白成功率预测模型，系统会匿名收集您的选项分值及计算结果。
+        2. **隐私保护**：我们**不会**收集您的姓名、微信号、定位等任何识别性个人信息。
+        3. **同步机制**：点击“同意”后，分析数据将自动同步至云端数据库。
+        
+        请选择是否同意数据匿名收集以继续使用系统：
+        """)
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("✅ 我同意并开始分析", use_container_width=True):
+                st.session_state['data_consent'] = True
+                st.rerun()
+        with c2:
+            if st.button("❌ 不同意", use_container_width=True):
+                st.error("很抱歉，由于云端同步逻辑需要，必须同意数据匿名授权后方可使用。")
+                st.stop()
+        return # 拦截后续代码
+
+    # --- 原有代码逻辑开始 ---
     st.markdown("请完成以下问卷，系统将通过**斯滕伯格爱情理论**计算您的最佳表白时机。")
 
     if 'analysis_data' not in st.session_state:
@@ -271,7 +301,7 @@ def main():
         ipc_scores['c2'] = st.slider("Q10. 即使我们意见不合，我也会坚持这段关系，而不是轻易放弃。", 1, 5, 3, key='c2')
         ipc_scores['c3'] = st.slider("Q11. 我认为对方是值得我投入时间和精力的『唯一』选择。", 1, 5, 3, key='c3')
 
-               # --- 3. 关键时刻 T₀ 引导 ---
+        # --- 3. 关键时刻 T₀ 引导 ---
         st.subheader("3. 🧭 关键时刻 T₀ 引导")
         t0_type = st.selectbox(
             "请选择你理想的『关键事件』类型：",
@@ -299,7 +329,5 @@ def main():
     if st.session_state['analysis_data']:
         run_analysis(st.session_state['analysis_data'])
 
-
 if __name__ == '__main__':
     main()
-
