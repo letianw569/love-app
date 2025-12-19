@@ -160,7 +160,7 @@ def plot_success_curve(A, t_peak, sigma, current_time):
     return fig
 
 # ---------- 5. 主分析函数 ----------
-# ---------- 5. 主分析函数 (已修复缩进与 int64 错误) ----------
+# ---------- 5. 主分析函数 (已修复缩进、int64 错误并新增最后两列数据) ----------
 def run_analysis(data):
     # 基础数据提取
     q1_delay = data['q1_delay']
@@ -169,6 +169,9 @@ def run_analysis(data):
     raw_p = [data[f'p{i}'] for i in range(1, 4)]
     raw_c = [data[f'c{i}'] for i in range(1, 4)]
     t0_ideal = data['t0_weeks']
+    # 新增字段
+    is_westlake = data['is_westlake']
+    will_confess = data['will_confess']
 
     # 模型计算
     mode = determine_mode(q1_delay, q2_change)
@@ -204,7 +207,7 @@ def run_analysis(data):
         try:
             sheet = gc.open_by_key(SHEET_ID).sheet1
             
-            # 统一强制转换为原生 Python 类型 (解决 int64 序列化报错)
+            # 统一强制转换为原生 Python 类型
             row = [
                 str(pd.Timestamp('now')), 
                 int(q1_delay), 
@@ -219,7 +222,9 @@ def run_analysis(data):
                 round(float(t_peak), 2), 
                 round(float(current_time_mapped), 2),
                 round(float(predicted_rate), 2), 
-                str(status)
+                str(status),
+                str(is_westlake),  # 第15列
+                str(will_confess)  # 第16列
             ]
             sheet.append_row(row)
             st.success("✅ 数据已同步至云端表格")
@@ -251,12 +256,19 @@ def run_analysis(data):
 
     st.subheader("📈 表白成功率曲线 (Success Probability Curve)")
     st.pyplot(plot_success_curve(A, t_peak, sigma, current_time_mapped))
+    
+    # --- 新增结果反馈逻辑 ---
+    st.markdown("---")
+    if will_confess == "是":
+        st.success("### 💡 系统寄语：停止迭代幻想，开启一场真实的对话！")
+    else:
+        st.info("### 💡 系统寄语：相信那个人在未来等你。")
+
 # ---------- 6. Streamlit UI ----------
 def main():
     st.set_page_config(page_title="恋爱分析系统", page_icon="💌")
     st.title("💌 恋爱告急·表白分析系统")
 
-    # --- 新增：匿名数据收集同意界面 ---
     if 'data_consent' not in st.session_state:
         st.session_state['data_consent'] = False
 
@@ -265,11 +277,9 @@ def main():
         st.markdown("""
         欢迎使用本分析系统。在开始前，请阅读以下说明：
         
-        1. **匿名收集**：为了优化表白成功率预测模型，系统会匿名收集您的选项分值及计算结果。
-        2. **隐私保护**：我们**不会**收集您的姓名、微信号、定位等任何识别性个人信息。
-        3. **同步机制**：点击“同意”后，分析数据将自动同步至云端数据库。
-        
-        请选择是否同意数据匿名收集以继续使用系统：
+        1. **匿名收集**：为了优化预测模型，系统会匿名收集选项分值及计算结果。
+        2. **隐私保护**：我们不会收集任何识别性个人信息。
+        3. **同步机制**：点击“同意”后，数据将同步至云端数据库。
         """)
         
         c1, c2 = st.columns(2)
@@ -279,9 +289,9 @@ def main():
                 st.rerun()
         with c2:
             if st.button("❌ 不同意", use_container_width=True):
-                st.error("很抱歉，由于云端同步逻辑需要，必须同意数据匿名授权后方可使用。")
+                st.error("很抱歉，必须同意数据匿名授权后方可使用。")
                 st.stop()
-        return # 拦截后续代码
+        return 
 
     # --- 原有代码逻辑开始 ---
     st.markdown("请完成以下问卷，系统将通过**斯滕伯格爱情理论**计算您的最佳表白时机。")
@@ -290,54 +300,53 @@ def main():
         st.session_state['analysis_data'] = None
 
     with st.form("love_analysis_form"):
+        # --- 新增前置问题 ---
+        st.subheader("0. 🏫 基本身份与意愿")
+        col_q1, col_q2 = st.columns(2)
+        with col_q1:
+            is_westlake = st.radio("你是否为西湖大学学生？", options=["是", "否"], horizontal=True)
+        with col_q2:
+            will_confess = st.radio("你是否有表白意愿？", options=["是", "否"], horizontal=True)
+        st.markdown("---")
+
         st.subheader("1. 📝 行为倾向问卷")
         q1_delay = st.radio("Q1. 设想表白后，你更倾向于：", options=[1, 2],
                             format_func=lambda x: "推迟/犹豫 (1)" if x == 1 else "果断行动 (2)")
         q2_change = st.radio("Q2. 你的表白计划是：", options=[1, 2],
                             format_func=lambda x: "稳扎稳打 (1)" if x == 1 else "灵活变通 (2)")
 
-        # --- 2. 关系评估问卷（9 题完整） ---
         st.subheader("2. 💖 关系评估问卷 (1-5分)")
         ipc_scores = {}
         st.markdown("##### [亲密 Intimacy]")
-        ipc_scores['i1'] = st.slider("Q3. 我可以向对方分享我最深处的恐惧和秘密。", 1, 5, 3, key='i1')
-        ipc_scores['i2'] = st.slider("Q4. 遇到困难时，对方是我的第一选择。", 1, 5, 3, key='i2')
-        ipc_scores['i3'] = st.slider("Q5. 我们在一起时，经常能感受到『心有灵犀』的默契。", 1, 5, 3, key='i3')
+        ipc_scores['i1'] = st.slider("Q3. 我可以向对方分享我最深处的恐惧和秘密。", 1, 5, 3)
+        ipc_scores['i2'] = st.slider("Q4. 遇到困难时，对方是我的第一选择。", 1, 5, 3)
+        ipc_scores['i3'] = st.slider("Q5. 我们在一起时，经常能感受到『心有灵犀』的默契。", 1, 5, 3)
 
         st.markdown("##### [激情 Passion]")
-        ipc_scores['p1'] = st.slider("Q6. 想到或看到对方时，我会有心跳加速和兴奋的感觉。", 1, 5, 3, key='p1')
-        ipc_scores['p2'] = st.slider("Q7. 我会努力制造浪漫和惊喜来保持新鲜感。", 1, 5, 3, key='p2')
-        ipc_scores['p3'] = st.slider("Q8. 我主动或期望与对方有身体接触或亲密行为。", 1, 5, 3, key='p3')
+        ipc_scores['p1'] = st.slider("Q6. 想到或看到对方时，我会有心跳加速和兴奋的感觉。", 1, 5, 3)
+        ipc_scores['p2'] = st.slider("Q7. 我会努力制造浪漫和惊喜来保持新鲜感。", 1, 5, 3)
+        ipc_scores['p3'] = st.slider("Q8. 我主动或期望与对方有身体接触或亲密行为。", 1, 5, 3)
 
         st.markdown("##### [承诺 Commitment]")
-        ipc_scores['c1'] = st.slider("Q9. 我对这段关系有明确的长期规划（例如：超过一年）。", 1, 5, 3, key='c1')
-        ipc_scores['c2'] = st.slider("Q10. 即使我们意见不合，我也会坚持这段关系，而不是轻易放弃。", 1, 5, 3, key='c2')
-        ipc_scores['c3'] = st.slider("Q11. 我认为对方是值得我投入时间和精力的『唯一』选择。", 1, 5, 3, key='c3')
+        ipc_scores['c1'] = st.slider("Q9. 我对这段关系有明确的长期规划（例如：超过一年）。", 1, 5, 3)
+        ipc_scores['c2'] = st.slider("Q10. 即使我们意见不合，我也会坚持这段关系，而不是轻易放弃。", 1, 5, 3)
+        ipc_scores['c3'] = st.slider("Q11. 我认为对方是值得我投入时间和精力的『唯一』选择。", 1, 5, 3)
 
-        # --- 3. 关键时刻 T₀ 引导 ---
         st.subheader("3. 🧭 关键时刻 T₀ 引导")
-        t0_type = st.selectbox(
-            "请选择你理想的『关键事件』类型：",
-            options=["纪念日/里程碑", "个人事件/节日", "情感高峰期"],
-            key='t0_type'
-        )
-        t0_weeks = st.number_input(
-            f"请输入距离该『{t0_type}』事件还有多少**周**？ (例如: 3.5)",
-            min_value=0.1,
-            value=4.0,
-            step=0.1,
-            key='t0_weeks'
-        )
+        t0_type = st.selectbox("请选择你理想的『关键事件』类型：", options=["纪念日/里程碑", "个人事件/节日", "情感高峰期"])
+        t0_weeks = st.number_input(f"请输入距离该事件还有多少周？", min_value=0.1, value=4.0, step=0.1)
+        
         submitted = st.form_submit_button("🚀 获取我的恋爱分析报告")
 
     if submitted:
-        analysis_data = {
+        st.session_state['analysis_data'] = {
             'q1_delay': q1_delay,
             'q2_change': q2_change,
+            'is_westlake': is_westlake,
+            'will_confess': will_confess,
             **ipc_scores,
             't0_weeks': t0_weeks
         }
-        st.session_state['analysis_data'] = analysis_data
 
     if st.session_state['analysis_data']:
         run_analysis(st.session_state['analysis_data'])
