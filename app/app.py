@@ -47,13 +47,32 @@ def success_rate(t, A, t0, sigma):
     return A * np.exp(-((t - t0)**2) / (2*sigma**2))
 
 def stability_analysis(t, A_val, t0, sigma, delta=0.01):
+    # 计算当前点的成功率，以及左右微小偏移点的成功率
+    p_current = success_rate(t, A_val, t0, sigma)
     right_limit = success_rate(t + delta, A_val, t0, sigma)
     left_limit  = success_rate(t - delta, A_val, t0, sigma)
+    
+    # 1. 极端错误处理
     if np.isnan(left_limit) or np.isnan(right_limit):
         return "骚操作把自己骚死了 💀"
-    is_limit_equal = abs(left_limit - right_limit) < 1e-2
+    
+    # 2. 核心逻辑微调：降低“随缘”触发频率
+    # 判定在该点是否处于剧烈变化中
+    is_limit_equal = abs(left_limit - right_limit) < 1e-3 # 提高精度要求，让相等更难
+    
+    # 3. 引入成功率权重（让“安排上了”更容易触发）
+    # 只要成功率超过了最大成功率(A_val)的一半，且没有进入极低区域
+    if p_current > (A_val * 0.4): 
+        return "安排上了 🎁"
+    
+    # 4. 其他判定
     if is_limit_equal:
-        return "尚在发展 🌱" if abs(left_limit - success_rate(t, A_val, t0, sigma)) < 1e-2 else "随缘 🍃"
+        # 如果成功率在增长，判定为发展中
+        if right_limit > left_limit:
+            return "尚在发展 🌱"
+        else:
+            return "随缘 🍃"
+            
     return "安排上了 🎁"
 
 def determine_mode(delay_choice, change_choice):
@@ -353,6 +372,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
