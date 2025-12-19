@@ -199,14 +199,29 @@ def run_analysis(data):
     predicted_rate = success_rate(current_time_mapped, A, t_peak, sigma)
 
     # 写入 Google Sheets
-    gc = get_gspread_client()
+   gc = get_gspread_client()
     if gc:
         try:
             sheet = gc.open_by_key(SHEET_ID).sheet1
-            row = [str(pd.Timestamp('now')), q1_delay, q2_change,
-                   *raw_i, *raw_p, *raw_c, t0_ideal,
-                   I, P, C, round(t_peak, 2), round(current_time_mapped, 2),
-                   round(predicted_rate, 2), status]
+            
+            # 【关键修复点】：使用 int() 或 float() 强制转换 numpy 类型
+            row = [
+                str(pd.Timestamp('now')), 
+                int(q1_delay), 
+                int(q2_change),
+                *[int(data[f'i{i}']) for i in range(1, 4)],
+                *[int(data[f'p{i}']) for i in range(1, 4)],
+                *[int(data[f'c{i}']) for i in range(1, 4)],
+                float(t0_ideal),
+                int(I), 
+                int(P), 
+                int(C), 
+                round(float(t_peak), 2), 
+                round(float(current_time_mapped), 2),
+                round(float(predicted_rate), 2), 
+                str(status)
+            ]
+            
             sheet.append_row(row)
             st.success("✅ 数据已同步至云端表格")
         except Exception as e:
@@ -331,5 +346,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
