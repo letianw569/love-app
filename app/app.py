@@ -160,8 +160,9 @@ def plot_success_curve(A, t_peak, sigma, current_time):
     return fig
 
 # ---------- 5. 主分析函数 ----------
+# ---------- 5. 主分析函数 (已修复缩进与 int64 错误) ----------
 def run_analysis(data):
-    # 基础数据
+    # 基础数据提取
     q1_delay = data['q1_delay']
     q2_change = data['q2_change']
     raw_i = [data[f'i{i}'] for i in range(1, 4)]
@@ -185,7 +186,6 @@ def run_analysis(data):
     t_peak = np.clip(t_peak, 0.01, None)
 
     times = generate_confession_times(mode)
-    brave = is_brave(times)
     mean_times_last = np.mean(times[-10:])
 
     if mode == "random":
@@ -198,20 +198,20 @@ def run_analysis(data):
     status = stability_analysis(current_time_mapped, A, t_peak, sigma)
     predicted_rate = success_rate(current_time_mapped, A, t_peak, sigma)
 
-    # 写入 Google Sheets
-   gc = get_gspread_client()
+    # --- 写入 Google Sheets 逻辑 ---
+    gc = get_gspread_client()
     if gc:
         try:
             sheet = gc.open_by_key(SHEET_ID).sheet1
             
-            # 【关键修复点】：使用 int() 或 float() 强制转换 numpy 类型
+            # 统一强制转换为原生 Python 类型 (解决 int64 序列化报错)
             row = [
                 str(pd.Timestamp('now')), 
                 int(q1_delay), 
                 int(q2_change),
-                *[int(data[f'i{i}']) for i in range(1, 4)],
-                *[int(data[f'p{i}']) for i in range(1, 4)],
-                *[int(data[f'c{i}']) for i in range(1, 4)],
+                *[int(x) for x in raw_i],
+                *[int(x) for x in raw_p],
+                *[int(x) for x in raw_c],
                 float(t0_ideal),
                 int(I), 
                 int(P), 
@@ -221,13 +221,12 @@ def run_analysis(data):
                 round(float(predicted_rate), 2), 
                 str(status)
             ]
-            
             sheet.append_row(row)
             st.success("✅ 数据已同步至云端表格")
         except Exception as e:
             st.warning(f"⚠️ 未能写入表格：{e}")
 
-    # 前端展示
+    # --- 前端展示部分 ---
     st.markdown("## ✅ **恋爱分析报告**")
     st.markdown(f"### 当前恋爱状态判定：**{status}**")
     st.markdown("---")
@@ -252,7 +251,6 @@ def run_analysis(data):
 
     st.subheader("📈 表白成功率曲线 (Success Probability Curve)")
     st.pyplot(plot_success_curve(A, t_peak, sigma, current_time_mapped))
-
 # ---------- 6. Streamlit UI ----------
 def main():
     st.set_page_config(page_title="恋爱分析系统", page_icon="💌")
@@ -346,6 +344,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
