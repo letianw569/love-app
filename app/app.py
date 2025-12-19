@@ -19,7 +19,7 @@ def get_gspread_client():
         st.info("💡 请确保已在 Streamlit Secrets 中配置了正确的密钥。")
         return None
 
-SHEET_ID = "1qRsD5Z2LxM0QYrVKL8g_6ZxyAj5VQYDXxR2oVwKoB7I"
+SHEET_ID = "1bLDL8ALzc11oU1Ox0Xv0SN9fi3aIRrmcfn4ogUtVPxY"
 
 # ---------- 1. Matplotlib 通用字体 ----------
 matplotlib.rcParams['font.sans-serif'] = ['Arial', 'DejaVu Sans', 'sans-serif']
@@ -331,3 +331,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
