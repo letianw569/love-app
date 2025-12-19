@@ -334,7 +334,7 @@ def main():
 
         st.subheader("3. 🧭 关键时刻 T₀ 引导")
         t0_type = st.selectbox("请选择你理想的『关键事件』类型：", options=["纪念日/里程碑", "个人事件/节日", "情感高峰期"])
-        t0_weeks = st.number_input(f"请输入距离该事件还有多少周？", min_value=0.1, value=4.0, step=0.1)
+        t0_weeks = st.number_input(f"请输入距离该事件还有多少周？", min_value=0.1, value=1.0, step=0.1)
         
         submitted = st.form_submit_button("🚀 获取我的恋爱分析报告")
 
@@ -353,6 +353,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
