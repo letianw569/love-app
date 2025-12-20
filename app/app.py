@@ -218,33 +218,62 @@ def run_analysis(data):
 
     # --- 写入 Google Sheets 逻辑 ---
     gc = get_gspread_client()
+
     if gc:
+
         try:
+
             sheet = gc.open_by_key(SHEET_ID).sheet1
+
             
+
             # 统一强制转换为原生 Python 类型
+
             row = [
+
                 str(pd.Timestamp('now')), 
+
                 int(q1_delay), 
+
                 int(q2_change),
+
                 *[int(x) for x in raw_i],
+
                 *[int(x) for x in raw_p],
+
                 *[int(x) for x in raw_c],
+
                 float(t0_ideal),
+
                 int(I), 
+
                 int(P), 
+
                 int(C), 
+
                 round(float(t_peak), 2), 
+
                 round(float(current_time_mapped), 2),
+
                 round(float(predicted_rate), 2), 
+
                 str(status),
+
                 str(is_westlake),  # 第15列
+
                 str(will_confess)  # 第16列
+
             ]
+
             sheet.append_row(row)
+
             st.success("✅ 数据已同步至云端表格")
+
         except Exception as e:
+
             st.warning(f"⚠️ 未能写入表格：{e}")
+
+
 
     # --- 前端展示部分 (大幅增强) ---
     st.markdown("## ✅ **恋爱分析报告**")
@@ -420,3 +449,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
