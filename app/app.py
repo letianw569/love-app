@@ -345,12 +345,12 @@ def run_analysis(data):
         st.info("### 🍃 系统最终建议：花若盛开，蝴蝶自来。相信那个人在未来等你。")
 
 # ---------- 6. Streamlit UI ----------
-# ---------- 6. Streamlit UI ----------
+# ---------- 6. Streamlit UI (修复重复 Key 报错版) ----------
 def main():
     st.set_page_config(page_title="恋爱分析系统", page_icon="💌", layout="centered")
     st.title("💌 恋爱告急·表白分析系统")
 
-    # --- 初始化状态机 ---
+    # 初始化状态变量
     if 'data_consent' not in st.session_state:
         st.session_state['data_consent'] = False
     if 'final_confirmed' not in st.session_state:
@@ -358,31 +358,24 @@ def main():
     if 'analysis_data' not in st.session_state:
         st.session_state['analysis_data'] = None
 
-    # --- 阶段 1: 数据授权 ---
+    # 1. 数据授权阶段
     if not st.session_state['data_consent']:
         st.info("### 📝 数据授权告知")
         st.markdown("""
         欢迎使用本分析系统。在开始前，请阅读以下说明：
-        1. **匿名收集**：系统会匿名收集选项分值及计算结果以优化模型。
-        2. **隐私保护**：我们不会收集任何识别性个人信息。
-        3. **同步机制**：点击“同意”后，数据将同步至云端数据库。
+        1. **匿名收集**：系统会匿名收集数据以优化模型。
+        2. **隐私保护**：不收集个人身份信息。
+        3. **同步机制**：点击同意后数据同步至云端。
         """)
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("✅ 我同意并开始分析", use_container_width=True):
-                st.session_state['data_consent'] = True
-                st.rerun()
-        with c2:
-            if st.button("❌ 不同意", use_container_width=True):
-                st.error("很抱歉，必须同意数据匿名授权后方可使用。")
-                st.stop()
+        if st.button("✅ 我同意并开始分析", use_container_width=True):
+            st.session_state['data_consent'] = True
+            st.rerun()
         return 
 
-    # --- 阶段 2: 问卷填写 与 真实性确认 ---
+    # 2. 问卷与确认阶段
     if not st.session_state['final_confirmed']:
         
-        # 2a. 如果还没提交数据，渲染表单
+        # A. 填写表单：仅在没有暂存数据时显示
         if st.session_state['analysis_data'] is None:
             st.markdown("请完成以下问卷，系统将通过**斯滕伯格爱情理论**计算您的最佳表白时机。")
             
@@ -421,7 +414,7 @@ def main():
                 st.subheader("3. 🧭 关键时刻 T₀ 引导")
                 t0_weeks = st.number_input(f"请输入距离该理想事件还有多少周？", min_value=0.1, value=1.0, step=0.1)
                 
-                submitted = st.form_submit_button("🚀 提交评估数据")
+                submitted = st.form_submit_button("🚀 获取我的恋爱分析报告")
                 
                 if submitted:
                     st.session_state['analysis_data'] = {
@@ -431,7 +424,7 @@ def main():
                     }
                     st.rerun()
 
-        # 2b. 提交后显示“真实性确认”
+        # B. 确认真实性：在表单提交后，生成报告前显示
         else:
             st.warning("### 🧐 真实性确认 / Final Verification")
             st.info("💡 **“以上问卷所填写的每一项数据，都是我内心最真实的想法。”**")
@@ -446,7 +439,7 @@ def main():
                     st.session_state['analysis_data'] = None
                     st.rerun()
 
-    # --- 阶段 3: 运行分析报告 ---
+    # 3. 报告展示阶段
     else:
         run_analysis(st.session_state['analysis_data'])
         
@@ -456,69 +449,5 @@ def main():
             st.session_state['final_confirmed'] = False
             st.rerun()
 
-
-    # --- 原有代码逻辑开始 ---
-    st.markdown("请完成以下问卷，系统将通过**斯滕伯格爱情理论**计算您的最佳表白时机。")
-
-    if 'analysis_data' not in st.session_state:
-        st.session_state['analysis_data'] = None
-
-    with st.form("love_analysis_form"):
-        # --- 新增前置问题 ---
-        st.subheader("0. 🏫 基本身份与意愿")
-        col_q1, col_q2 = st.columns(2)
-        with col_q1:
-            is_westlake = st.radio("你是否为西湖大学学生？", options=["是", "否"], horizontal=True)
-        with col_q2:
-            will_confess = st.radio("你是否有表白意愿？", options=["是", "否"], horizontal=True)
-        st.markdown("---")
-
-        st.subheader("1. 📝 行为倾向问卷")
-        q1_delay = st.radio("Q1. 设想表白后，你更倾向于：", options=[1, 2],
-                            format_func=lambda x: "推迟/犹豫 (1)" if x == 1 else "果断行动 (2)")
-        q2_change = st.radio("Q2. 你的表白计划是：", options=[1, 2],
-                            format_func=lambda x: "稳扎稳打 (1)" if x == 1 else "灵活变通 (2)")
-
-        st.subheader("2. 💖 关系评估问卷 (1-5分)")
-        ipc_scores = {}
-        st.markdown("##### [亲密 Intimacy]")
-        ipc_scores['i1'] = st.slider("Q3. 我可以向对方分享我最深处的恐惧和秘密。", 1, 5, 3)
-        ipc_scores['i2'] = st.slider("Q4. 遇到困难时，对方是我的第一选择。", 1, 5, 3)
-        ipc_scores['i3'] = st.slider("Q5. 我们在一起时，经常能感受到『心有灵犀』的默契。", 1, 5, 3)
-
-        st.markdown("##### [激情 Passion]")
-        ipc_scores['p1'] = st.slider("Q6. 想到或看到对方时，我会有心跳加速和兴奋的感觉。", 1, 5, 3)
-        ipc_scores['p2'] = st.slider("Q7. 我会努力制造浪漫和惊喜来保持新鲜感。", 1, 5, 3)
-        ipc_scores['p3'] = st.slider("Q8. 我主动或期望与对方有身体接触或亲密行为。", 1, 5, 3)
-
-        st.markdown("##### [承诺 Commitment]")
-        ipc_scores['c1'] = st.slider("Q9. 我对这段关系有明确的长期规划（例如：超过一年）。", 1, 5, 3)
-        ipc_scores['c2'] = st.slider("Q10. 即使我们意见不合，我也会坚持这段关系，而不是轻易放弃。", 1, 5, 3)
-        ipc_scores['c3'] = st.slider("Q11. 我认为对方是值得我投入时间和精力的『唯一』选择。", 1, 5, 3)
-
-        st.subheader("3. 🧭 关键时刻 T₀ 引导")
-        t0_type = st.selectbox("请选择你理想的『关键事件』类型：", options=["纪念日/里程碑", "个人事件/节日", "情感高峰期"])
-        t0_weeks = st.number_input(f"请输入距离该事件还有多少周？", min_value=0.1, value=1.0, step=0.1)
-        
-        submitted = st.form_submit_button("🚀 获取我的恋爱分析报告")
-
-    if submitted:
-        st.session_state['analysis_data'] = {
-            'q1_delay': q1_delay,
-            'q2_change': q2_change,
-            'is_westlake': is_westlake,
-            'will_confess': will_confess,
-            **ipc_scores,
-            't0_weeks': t0_weeks
-        }
-
-    if st.session_state['analysis_data']:
-        run_analysis(st.session_state['analysis_data'])
-
 if __name__ == '__main__':
     main()
-
-
-
-
-
