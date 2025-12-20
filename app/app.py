@@ -350,7 +350,7 @@ def main():
     st.set_page_config(page_title="恋爱分析系统", page_icon="💌", layout="centered")
     st.title("💌 恋爱告急·表白分析系统")
 
-    # --- 初始化 Session State ---
+    # --- 初始化状态机 ---
     if 'data_consent' not in st.session_state:
         st.session_state['data_consent'] = False
     if 'final_confirmed' not in st.session_state:
@@ -358,12 +358,12 @@ def main():
     if 'analysis_data' not in st.session_state:
         st.session_state['analysis_data'] = None
 
-    # --- 第一步：数据授权 ---
+    # --- 阶段 1: 数据授权 ---
     if not st.session_state['data_consent']:
         st.info("### 📝 数据授权告知")
         st.markdown("""
         欢迎使用本分析系统。在开始前，请阅读以下说明：
-        1. **匿名收集**：为了优化预测模型，系统会匿名收集选项分值及计算结果。
+        1. **匿名收集**：系统会匿名收集选项分值及计算结果以优化模型。
         2. **隐私保护**：我们不会收集任何识别性个人信息。
         3. **同步机制**：点击“同意”后，数据将同步至云端数据库。
         """)
@@ -379,11 +379,10 @@ def main():
                 st.stop()
         return 
 
-    # --- 第二步：问卷填写与真实性确认 ---
-    # 如果还没有确认真实性，显示问卷或确认界面
+    # --- 阶段 2: 问卷填写 与 真实性确认 ---
     if not st.session_state['final_confirmed']:
         
-        # 如果还没提交过数据，显示问卷表单
+        # 2a. 如果还没提交数据，渲染表单
         if st.session_state['analysis_data'] is None:
             st.markdown("请完成以下问卷，系统将通过**斯滕伯格爱情理论**计算您的最佳表白时机。")
             
@@ -420,44 +419,37 @@ def main():
                 ipc_scores['c3'] = st.slider("Q11. 我认为对方是值得我投入时间和精力的『唯一』选择。", 1, 5, 3)
 
                 st.subheader("3. 🧭 关键时刻 T₀ 引导")
-                t0_type = st.selectbox("请选择你理想的『关键事件』类型：", options=["纪念日/里程碑", "个人事件/节日", "情感高峰期"])
-                t0_weeks = st.number_input(f"请输入距离该事件还有多少周？", min_value=0.1, value=1.0, step=0.1)
+                t0_weeks = st.number_input(f"请输入距离该理想事件还有多少周？", min_value=0.1, value=1.0, step=0.1)
                 
                 submitted = st.form_submit_button("🚀 提交评估数据")
                 
                 if submitted:
                     st.session_state['analysis_data'] = {
-                        'q1_delay': q1_delay,
-                        'q2_change': q2_change,
-                        'is_westlake': is_westlake,
-                        'will_confess': will_confess,
-                        **ipc_scores,
-                        't0_weeks': t0_weeks
+                        'q1_delay': q1_delay, 'q2_change': q2_change,
+                        'is_westlake': is_westlake, 'will_confess': will_confess,
+                        **ipc_scores, 't0_weeks': t0_weeks
                     }
                     st.rerun()
 
-        # 如果提交了数据但还没做最后的“真实性确认”
+        # 2b. 提交后显示“真实性确认”
         else:
             st.warning("### 🧐 真实性确认 / Final Verification")
-            st.markdown("#### 在生成分析报告前，请再次确认：")
             st.info("💡 **“以上问卷所填写的每一项数据，都是我内心最真实的想法。”**")
             
-            col_left, col_right = st.columns(2)
-            with col_left:
+            c_left, c_right = st.columns(2)
+            with c_left:
                 if st.button("✨ 是的，这是真实想法", use_container_width=True):
                     st.session_state['final_confirmed'] = True
                     st.rerun()
-            with col_right:
+            with c_right:
                 if st.button("⬅️ 返回修改数据", use_container_width=True):
                     st.session_state['analysis_data'] = None
                     st.rerun()
 
-    # --- 第三步：生成分析报告 ---
+    # --- 阶段 3: 运行分析报告 ---
     else:
-        # 运行核心分析函数（含数据同步至 Google Sheets）
         run_analysis(st.session_state['analysis_data'])
         
-        # 底部提供重置按钮
         st.markdown("---")
         if st.button("🔄 重新进行测试", use_container_width=True):
             st.session_state['analysis_data'] = None
@@ -527,6 +519,7 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
     main()
+
 
 
 
