@@ -1,8 +1,8 @@
-# app.py 整合完整版（含数据同意界面）
+# app.py 整合完整版（含数据同意界面 + 深度分析解读）
 import streamlit as st
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')   # 云端无头
+matplotlib.use('Agg')   # 云端无头模式，防止GUI报错
 import matplotlib.pyplot as plt
 import gspread
 from google.oauth2.service_account import Credentials
@@ -57,17 +57,14 @@ def stability_analysis(t, A_val, t0, sigma, delta=0.01):
         return "骚操作把自己骚死了 💀"
     
     # 2. 核心逻辑微调：降低“随缘”触发频率
-    # 判定在该点是否处于剧烈变化中
-    is_limit_equal = abs(left_limit - right_limit) < 1e-3 # 提高精度要求，让相等更难
+    is_limit_equal = abs(left_limit - right_limit) < 1e-3 
     
-    # 3. 引入成功率权重（让“安排上了”更容易触发）
-    # 只要成功率超过了最大成功率(A_val)的一半，且没有进入极低区域
+    # 3. 引入成功率权重
     if p_current > (A_val * 0.4): 
         return "安排上了 🎁"
     
     # 4. 其他判定
     if is_limit_equal:
-        # 如果成功率在增长，判定为发展中
         if right_limit > left_limit:
             return "尚在发展 🌱"
         else:
@@ -136,7 +133,7 @@ def plot_love_triangle(I, P, C):
             ha='center', va='center', fontsize=10, color=plot_color, wrap=True,
             bbox=dict(facecolor='white', alpha=0.9, edgecolor='none', boxstyle="round,pad=0.7"))
     ax.set_title("💞 Sternberg's Triangular Theory of Love",
-                  va='bottom', fontsize=15, pad=20, color='darkslategray')
+                 va='bottom', fontsize=15, pad=20, color='darkslategray')
     return fig
 
 @st.cache_data
@@ -178,8 +175,7 @@ def plot_success_curve(A, t_peak, sigma, current_time):
 
     return fig
 
-# ---------- 5. 主分析函数 ----------
-# ---------- 5. 主分析函数 (已修复缩进、int64 错误并新增最后两列数据) ----------
+# ---------- 5. 主分析函数 (含人格判断与详细解读) ----------
 def run_analysis(data):
     # 基础数据提取
     q1_delay = data['q1_delay']
@@ -250,42 +246,94 @@ def run_analysis(data):
         except Exception as e:
             st.warning(f"⚠️ 未能写入表格：{e}")
 
-    # --- 前端展示部分 ---
+    # --- 前端展示部分 (大幅增强) ---
     st.markdown("## ✅ **恋爱分析报告**")
     st.markdown(f"### 当前恋爱状态判定：**{status}**")
+    
+    # 1. 人格类型分析
+    mode_map = {
+        "mo_ceng": "🐢 磨蹭型 (Hesitant) - 倾向于等待完美时机，但也可能错失良机。",
+        "sao_dong": "🐇 骚动型 (Restless) - 行动果断，内心躁动，倾向于快速推进。",
+        "random": "🎲 随缘型 (Spontaneous) - 行为难以预测，跟随感觉走。"
+    }
+    user_personality = mode_map.get(mode, "未知类型")
+    st.info(f"🎭 **您的行动人格分析：{user_personality}**")
+
     st.markdown("---")
 
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("📊 关系基础分析 (IPC)")
-        st.metric(label="亲密 (I) 评分", value=f"{I}/10")
-        st.metric(label="激情 (P) 评分", value=f"{P}/10")
-        st.metric(label="承诺 (C) 评分", value=f"{C}/10")
+        st.metric(label="亲密 (I) 评分", value=f"{I}/10", help="情感的温暖与亲近程度")
+        st.metric(label="激情 (P) 评分", value=f"{P}/10", help="浪漫、身体吸引与冲动")
+        st.metric(label="承诺 (C) 评分", value=f"{C}/10", help="维持关系的决定与责任感")
 
     with col2:
         st.subheader("🧭 时机分析 (T)")
-        st.metric(label="🌟 实际最佳时刻 Tpeak", value=f"{t_peak:.2f} 周后")
-        st.metric(label="预测的行动时刻 T", value=f"{current_time_mapped:.2f} 周后",
-                  delta=f"{current_time_mapped - t_peak:.2f} 偏差")
-        st.metric(label="预测成功率 p(T)", value=f"{predicted_rate:.2f}")
+        st.metric(label="🌟 理论最佳时刻 T_peak", value=f"{t_peak:.2f} 周后", help="模型计算出的成功率最高点")
+        st.metric(label="🚀 预测行动时刻 T", value=f"{current_time_mapped:.2f} 周后",
+                  delta=f"{current_time_mapped - t_peak:.2f} 周偏差", help="结合您的人格计算出的实际行动时间")
+        st.metric(label="🎯 预测成功率 p(T)", value=f"{(predicted_rate*100):.1f}%")
 
+    # --- 图表 1: 斯滕伯格三角 ---
     st.markdown("---")
-    st.subheader("💞 爱之三角图 (Triangular Analysis)")
+    st.subheader("1️⃣ 爱之三角图 (Triangular Analysis)")
     st.pyplot(plot_love_triangle(I, P, C))
+    
+    # 图表解读 1
+    st.markdown("""
+    #### 💡 三角图解读：
+    * **亲密 (I)**、**激情 (P)**、**承诺 (C)** 构成了三角形的三个顶点。
+    * **均衡性**：三角形越接近正三角形，关系越平衡。
+    * **面积**：三角形面积越大，代表爱的总量越丰富。
+    """)
+    if I < 4 and P < 4 and C < 4:
+        st.warning("⚠️ **分析**：目前三项指标均较低，建议在行动前先增加日常互动，培养基础感情。")
+    elif I >= 7 and P >= 7 and C >= 7:
+        st.success("🎉 **分析**：恭喜！你们处于极其理想的『完美之爱』状态，基础非常牢固。")
+    else:
+        max_attr = max(I, P, C)
+        if max_attr == I:
+            st.info("ℹ️ **分析**：你们的关系以**亲密感**为主导，像知心好友般舒适，但可能需要更多激情的火花。")
+        elif max_attr == P:
+            st.info("ℹ️ **分析**：**激情**是你们关系的主要驱动力，吸引力很强，但需注意培养长期的稳定性。")
+        elif max_attr == C:
+            st.info("ℹ️ **分析**：**承诺**是当前的强项，关系很稳定，但可能稍显平淡，建议增加一些浪漫活动。")
 
-    st.subheader("📈 表白成功率曲线 (Success Probability Curve)")
+    # --- 图表 2: 成功率曲线 ---
+    st.subheader("2️⃣ 表白成功率曲线 (Success Probability Curve)")
     st.pyplot(plot_success_curve(A, t_peak, sigma, current_time_mapped))
     
-    # --- 新增结果反馈逻辑 ---
+    # 图表解读 2
+    st.markdown("""
+    #### 💡 曲线图解读：
+    * **蓝色曲线**：代表随时间推移，表白成功率的变化趋势。
+    * **红色虚线 (Ideal Peak)**：理论上的最高成功率时刻。
+    * **橙色实线 (Predicted Action)**：系统预测你会采取行动的时刻。
+    * **橙色点位置**：如果你在预测时间点行动，对应的成功率高度。
+    """)
+    
+    # 时机建议逻辑
+    delta_t = current_time_mapped - t_peak
+    st.write(f"**数据明细**：理想时刻 `{t_peak:.2f}周` vs 实际行动 `{current_time_mapped:.2f}周`")
+    
+    if abs(delta_t) < 0.5:
+        st.success("✅ **时机评价：精准！** 您的行动节奏与最佳时机高度重合，这是最好的信号。")
+    elif delta_t < -0.5:
+        st.warning("⚡ **时机评价：操之过急**。您可能比最佳时机行动得更早。虽然热情可嘉，但略显冒进，建议稍微沉住气，多做铺垫。")
+    else:
+        st.warning("🐢 **时机评价：稍显拖沓**。您可能在最佳时机之后才行动。犹豫可能会让热情冷却，建议加快节奏！")
+    
+    # --- 最终寄语 ---
     st.markdown("---")
     if will_confess == "是":
-        st.success("### 💡 系统寄语：停止迭代幻想，开启一场真实的对话！")
+        st.success("### 🚀 系统最终建议：停止迭代幻想，开启一场真实的对话！")
     else:
-        st.info("### 💡 系统寄语：相信那个人在未来等你。")
+        st.info("### 🍃 系统最终建议：花若盛开，蝴蝶自来。相信那个人在未来等你。")
 
 # ---------- 6. Streamlit UI ----------
 def main():
-    st.set_page_config(page_title="恋爱分析系统", page_icon="💌")
+    st.set_page_config(page_title="恋爱分析系统", page_icon="💌", layout="centered")
     st.title("💌 恋爱告急·表白分析系统")
 
     if 'data_consent' not in st.session_state:
@@ -372,9 +420,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
