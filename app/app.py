@@ -215,81 +215,36 @@ def run_analysis(data):
 
     status = stability_analysis(current_time_mapped, A, t_peak, sigma)
     predicted_rate = success_rate(current_time_mapped, A, t_peak, sigma)
-    # --- 增加调试信息的写入逻辑 ---
-    if gc:
-        try:
-            spreadsheet = gc.open_by_key(SHEET_ID)
-            sheet = spreadsheet.sheet1 
-        
-        # 调试信息：打印当前正在操作的表名和行数
-        # st.write(f"调试：正在写入表格 '{spreadsheet.title}' 的 '{sheet.title}' 页")
-        
-            row = [...] # 你的数据行
-            sheet.append_row(row)
-        
-        # 实时反馈：告诉用户数据写到了第几行
-            new_row_num = len(sheet.col_values(1)) 
-            st.success(f"✅ 数据已同步！当前总行数：{new_row_num}")
-        except Exception as e:
-            st.error(f"❌ 写入失败：{e}")
+
     # --- 写入 Google Sheets 逻辑 ---
     gc = get_gspread_client()
-
     if gc:
-
         try:
-
             sheet = gc.open_by_key(SHEET_ID).sheet1
-
             
-
             # 统一强制转换为原生 Python 类型
-
             row = [
-
                 str(pd.Timestamp('now')), 
-
                 int(q1_delay), 
-
                 int(q2_change),
-
                 *[int(x) for x in raw_i],
-
                 *[int(x) for x in raw_p],
-
                 *[int(x) for x in raw_c],
-
                 float(t0_ideal),
-
                 int(I), 
-
                 int(P), 
-
                 int(C), 
-
                 round(float(t_peak), 2), 
-
                 round(float(current_time_mapped), 2),
-
                 round(float(predicted_rate), 2), 
-
                 str(status),
-
                 str(is_westlake),  # 第15列
-
                 str(will_confess)  # 第16列
-
             ]
-
             sheet.append_row(row)
-
             st.success("✅ 数据已同步至云端表格")
-
         except Exception as e:
-
             st.warning(f"⚠️ 未能写入表格：{e}")
-
-
 
     # --- 前端展示部分 (大幅增强) ---
     st.markdown("## ✅ **恋爱分析报告**")
@@ -465,6 +420,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
