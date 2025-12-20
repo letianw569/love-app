@@ -47,31 +47,44 @@ def success_rate(t, A, t0, sigma):
     return A * np.exp(-((t - t0)**2) / (2*sigma**2))
 
 def stability_analysis(t, A_val, t0, sigma, delta=0.01):
-    # 计算当前点的成功率，以及左右微小偏移点的成功率
+    # 计算当前点、左偏移点、右偏移点的成功率
     p_current = success_rate(t, A_val, t0, sigma)
     right_limit = success_rate(t + delta, A_val, t0, sigma)
     left_limit  = success_rate(t - delta, A_val, t0, sigma)
     
     # 1. 极端错误处理
-    if np.isnan(left_limit) or np.isnan(right_limit):
-        return "骚操作把自己骚死了 💀"
-    
-    # 2. 核心逻辑微调：降低“随缘”触发频率
-    is_limit_equal = abs(left_limit - right_limit) < 1e-3 
-    
-    # 3. 引入成功率权重
-    if p_current > (A_val * 0.4): 
-        return "安排上了 🎁"
-    
-    # 4. 其他判定
-    if is_limit_equal:
-        if right_limit > left_limit:
-            return "尚在发展 🌱"
-        else:
-            return "随缘 🍃"
-            
-    return "安排上了 🎁"
+    if np.isnan(p_current):
+        return "数据异常 💀"
 
+    # 2. 基础底气判定：如果 A_val (由IPC决定) 太低，基础不牢
+    # A_val 范围通常在 0.55 (低IPC) 到 1.0 (高IPC) 之间
+    if A_val < 0.65:
+        return "现状堪忧 🌪️ (基础薄弱，建议先培养感情)"
+
+    # 3. 趋势判定：当前成功率是在上升还是下降
+    is_dropping = right_limit < left_limit  # 过了巅峰期，正在走下坡路
+
+    # 4. 阶梯式状态判定
+    # 状态 A：巅峰极高且就在当下
+    if p_current > 0.8:
+        return "稳操胜券 💍"
+    
+    # 状态 B：成功率尚可
+    if p_current > 0.5:
+        if is_dropping:
+            return "速战速决 🏃 (成功率开始下滑，抓紧最后时机)"
+        else:
+            return "安排上了 🎁 (正处于上升期/巅峰期)"
+            
+    # 状态 C：成功率较低
+    if p_current > 0.3:
+        if is_dropping:
+            return "错失良机 🍂 (最佳时刻已过，建议重新铺垫)"
+        else:
+            return "尚在发展 🌱 (好感度积累中，表白还需等待)"
+
+    # 5. 默认兜底：成功率极低
+    return "静观其变 🍵 (目前胜算较低，不宜贸然出击)"
 def determine_mode(delay_choice, change_choice):
     if delay_choice == 1 and change_choice == 1:
         return "mo_ceng"
@@ -420,3 +433,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
