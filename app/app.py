@@ -456,8 +456,6 @@ def main():
             st.session_state['final_confirmed'] = False
             st.rerun()
 
-if __name__ == '__main__':
-    main()
 
     # --- 原有代码逻辑开始 ---
     st.markdown("请完成以下问卷，系统将通过**斯滕伯格爱情理论**计算您的最佳表白时机。")
@@ -519,6 +517,7 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
     main()
+
 
 
 
